@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prediksi Harga Bitcoin dengan CSV Klik</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f9f9f9;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      background-color: #4a90e2;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #357ab8;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    tr:hover {
+      background-color: #dbeeff;
+      cursor: pointer;
+    }
+    #fileInfo {
+      margin-top: 8px;
+      font-style: italic;
+      color: #666;
+    }
+    #result {
+      margin-top: 25px;
+      padding: 15px;
+      background: #e6f0ff;
+      border-radius: 6px;
+      font-weight: 700;
+      color: #004a99;
+      font-size: 18px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Prediksi Harga Bitcoin (BTC)</h2>
+
+    <label for="csvFile">Pilih File CSV:</label>
+    <input type="file" id="csvFile" accept=".csv" />
+    <div id="fileInfo">Belum ada file dipilih.</div>
+
+    <table id="dataTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Open</th>
+          <th>High</th>
+          <th>Low</th>
+          <th>Close</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Isi tabel muncul di sini -->
+      </tbody>
+    </table>
+
+    <form id="predictForm" style="margin-top:30px;">
+      <label>Open:</label>
+      <input type="text" id="open" name="open" required />
+      <label>High:</label>
+      <input type="text" id="high" name="high" required />
+      <label>Low:</label>
+      <input type="text" id="low" name="low" required />
+      <label>Close:</label>
+      <input type="text" id="close" name="close" required />
+      <button type="submit">Prediksi</button>
+    </form>
+
+    <div id="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const csvFileInput = document.getElementById('csvFile');
+    const fileInfo = document.getElementById('fileInfo');
+    const dataTable = document.getElementById('dataTable');
+    const tbody = dataTable.querySelector('tbody');
+
+    const openInput = document.getElementById('open');
+    const highInput = document.getElementById('high');
+    const lowInput = document.getElementById('low');
+    const closeInput = document.getElementById('close');
+    const resultDiv = document.getElementById('result');
+
+    csvFileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) {
+        fileInfo.textContent = 'Belum ada file dipilih.';
+        dataTable.style.display = 'none';
+        tbody.innerHTML = '';
+        return;
+      }
+
+      fileInfo.textContent = `File yang dipilih: ${file.name}`;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        parseCSV(text);
+      }
+      reader.readAsText(file);
+    });
+
+    function parseCSV(text) {
+      tbody.innerHTML = '';
+      dataTable.style.display = 'none';
+      resultDiv.style.display = 'none';
+      resultDiv.textContent = '';
+
+      const lines = text.trim().split('\n');
+      if(lines.length < 2) {
+        alert('File CSV terlalu pendek.');
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const colOpen = headers.indexOf('open');
+      const colHigh = headers.indexOf('high');
+      const colLow = headers.indexOf('low');
+      const colClose = headers.indexOf('close');
+
+      if(colOpen === -1 || colHigh === -1 || colLow === -1 || colClose === -1) {
+        alert('File CSV harus punya kolom: open, high, low, close');
+        return;
+      }
+
+      for(let i=1; i<lines.length; i++) {
+        const cols = lines[i].split(',');
+        if(cols.length <= Math.max(colOpen, colHigh, colLow, colClose)) continue;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${cols[colOpen]}</td>
+          <td>${cols[colHigh]}</td>
+          <td>${cols[colLow]}</td>
+          <td>${cols[colClose]}</td>
+        `;
+
+        tr.addEventListener('click', () => {
+          openInput.value = cols[colOpen];
+          highInput.value = cols[colHigh];
+          lowInput.value = cols[colLow];
+          closeInput.value = cols[colClose];
+          resultDiv.style.display = 'none';
+          resultDiv.textContent = '';
+        });
+
+        tbody.appendChild(tr);
+      }
+
+      if(tbody.children.length > 0){
+        dataTable.style.display = 'table';
+      } else {
+        alert('File CSV tidak ada data yang valid.');
+      }
+    }
+
+    document.getElementById('predictForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Ambil nilai form, ubah ke number
+      const openVal = parseFloat(openInput.value);
+      const highVal = parseFloat(highInput.value);
+      const lowVal = parseFloat(lowInput.value);
+      const closeVal = parseFloat(closeInput.value);
+
+      if(isNaN(openVal) || isNaN(highVal) || isNaN(lowVal) || isNaN(closeVal)) {
+        alert('Semua input harus angka valid.');
+        return;
+      }
+
+      // Simulasi prediksi: misal rata-rata * faktor 1.02
+      const prediction = ((openVal + highVal + lowVal + closeVal) / 4) * 1.02;
+
+      resultDiv.style.display = 'block';
+      resultDiv.textContent = `Hasil Prediksi Harga BTC: USD ${prediction.toFixed(4)}`;
+    });
+  </script>
+</body>
+</html>
